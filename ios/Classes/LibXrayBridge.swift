@@ -5,14 +5,15 @@ import Darwin
 import LibXray
 #endif
 
-/// Dynamic and compile-time bridge for `LibXray.xcframework` (`XTLS/libXray`) and `Libv2ray` on iOS.
-///
-/// Works seamlessly whether:
-/// 1. `LibXray.xcframework` is imported at compile time (`#if canImport(LibXray)`), OR
-/// 2. `LibXray` / `Libv2ray` symbols are linked into the binary or loaded dynamically via `dlsym` / Objective-C runtime.
+/// Native iOS bridge for `LibXray.xcframework` (`XTLS/libXray` API v3 `CGoInvoke` + `CGoFree`),
+/// with automatic fallback to legacy `LibXray*` symbols if a different XCFramework build is linked.
 public final class LibXrayBridge {
     public static let shared = LibXrayBridge()
 
+    private static let apiVersion: Int = 3
+
+    private typealias CGoInvokeFn = @convention(c) (UnsafeMutablePointer<CChar>?) -> UnsafeMutablePointer<CChar>?
+    private typealias CGoFreeFn = @convention(c) (UnsafeMutablePointer<CChar>?) -> Void
     private typealias CStringUnaryFn = @convention(c) (UnsafePointer<CChar>?) -> UnsafeMutablePointer<CChar>?
     private typealias CStringNullaryFn = @convention(c) () -> UnsafeMutablePointer<CChar>?
 
@@ -24,12 +25,18 @@ public final class LibXrayBridge {
     public var isCoreRunning: Bool {
         lock.lock()
         defer { lock.unlock() }
+        if let stateResp = try? invokeAPIV3(method: "getXrayState", payload: nil),
+           let dataDict = stateResp["data"] as? [String: Any],
+           let running = dataDict["running"] as? Bool {
+            isCoreRunningFlag = running
+        }
         return isCoreRunningFlag
     }
 
     // MARK: - Geo Assets Directory
 
-    /// Copies `geoip.dat` and `geosite.dat` from the app/plugin bundle into the target working directory if present.
+    /// Copies `geoip.dat` and `geosite.dat` from the app/plugin bundle into the target working directory if present,
+    /// and sets `xray.location.asset` in the process environment.
     public func prepareAssetsDirectory(groupIdentifier: String = "") -> URL {
         let baseDir: URL
         if !groupIdentifier.isEmpty,
@@ -64,19 +71,14 @@ public final class LibXrayBridge {
             }
         }
 
+        setenv("xray.location.asset", baseDir.path, 1)
+        setenv("XRAY_LOCATION_ASSET", baseDir.path, 1)
         return baseDir
     }
 
     // MARK: - Core Lifecycle
 
-    /// Starts Xray using `LibXrayRunXray` (or `LibXrayRunXrayFromJSON`).
-    ///
-    /// - Parameters:
-    ///   - configJSON: Full Xray JSON configuration string.
-    ///   - datDir: Path to directory containing `geoip.dat` / `geosite.dat`.
-    ///   - configFileURL: File URL where `config.json` will be written for `LibXrayRunXray`.
-    ///   - tunFd: Optional TUN file descriptor (`> 0` in PacketTunnel mode).
-    ///   - maxMemory: Soft memory cap in bytes (default 45 MB for iOS NetworkExtension safety).
+    /// Starts Xray using `XTLS/libXray` API v3 (`method: "runXray"`, `payload: {"xrayJson": ...}`).
     public func startXray(
         configJSON: String,
         datDir: String,
@@ -91,6 +93,10 @@ public final class LibXrayBridge {
             _ = stopXrayInternal()
         }
 
+        setenv("xray.location.asset", datDir, 1)
+        setenv("XRAY_LOCATION_ASSET", datDir, 1)
+        setenv("GOMEMLIMIT", "\(maxMemory)B", 1)
+
         if tunFd > 0 {
             setenv("XRAY_TUN_FD", String(tunFd), 1)
             setenv("xray.tun.fd", String(tunFd), 1)
@@ -101,42 +107,37 @@ public final class LibXrayBridge {
 
         try configJSON.write(to: configFileURL, atomically: true, encoding: .utf8)
 
-        let payload: [String: Any] = [
+        // 1. Primary path: XTLS/libXray API v3 `CGoInvoke` (`method: "runXray"`)
+        if let response = try invokeAPIV3(method: "runXray", payload: ["xrayJson": configJSON]) {
+            try validateInvokeEnvelope(response, context: "runXray")
+            isCoreRunningFlag = true
+            V2rayLogManager.shared.log("Xray core started via CGoInvoke(runXray) (tunFd=\(tunFd))", level: "I", tag: "LibXrayBridge")
+            return
+        }
+
+        // 2. Fallback: Legacy base64 `LibXrayRunXray` if linked against an older wrapper
+        let legacyPayload: [String: Any] = [
             "datDir": datDir,
             "configPath": configFileURL.path,
             "maxMemory": maxMemory
         ]
-        let base64Req = try encodeBase64JSON(payload)
-
-        if let responseBase64 = invokeUnary(symbol: "LibXrayRunXray", arg: base64Req) {
-            try validateLibXrayResponse(responseBase64, context: "LibXrayRunXray")
+        let base64Req = try encodeBase64JSON(legacyPayload)
+        if let responseBase64 = invokeLegacyUnary(symbol: "LibXrayRunXray", arg: base64Req),
+           let decoded = decodeBase64JSON(responseBase64) {
+            try validateInvokeEnvelope(decoded, context: "LibXrayRunXray")
             isCoreRunningFlag = true
-            V2rayLogManager.shared.log("Xray core started via LibXrayRunXray (tunFd=\(tunFd))", level: "I", tag: "LibXrayBridge")
-            return
-        }
-
-        // Fallback to LibXrayRunXrayFromJSON
-        let jsonPayload: [String: Any] = [
-            "datDir": datDir,
-            "xrayJson": configJSON,
-            "maxMemory": maxMemory
-        ]
-        let base64JsonReq = try encodeBase64JSON(jsonPayload)
-        if let responseBase64 = invokeUnary(symbol: "LibXrayRunXrayFromJSON", arg: base64JsonReq) {
-            try validateLibXrayResponse(responseBase64, context: "LibXrayRunXrayFromJSON")
-            isCoreRunningFlag = true
-            V2rayLogManager.shared.log("Xray core started via LibXrayRunXrayFromJSON (tunFd=\(tunFd))", level: "I", tag: "LibXrayBridge")
+            V2rayLogManager.shared.log("Xray core started via legacy LibXrayRunXray (tunFd=\(tunFd))", level: "I", tag: "LibXrayBridge")
             return
         }
 
         throw NSError(
             domain: "LibXrayBridge",
             code: -404,
-            userInfo: [NSLocalizedDescriptionKey: "LibXray binary not linked. Place LibXray.xcframework inside ios/Frameworks/ and run pod install."]
+            userInfo: [NSLocalizedDescriptionKey: "LibXray symbols (CGoInvoke) not found. Ensure LibXray.xcframework is linked."]
         )
     }
 
-    /// Stops the active Xray instance via `LibXrayStopXray`.
+    /// Stops the active Xray instance via `CGoInvoke` (`method: "stopXray"`).
     @discardableResult
     public func stopXray() -> Bool {
         lock.lock()
@@ -150,8 +151,13 @@ public final class LibXrayBridge {
             unsetenv("XRAY_TUN_FD")
             unsetenv("xray.tun.fd")
         }
-        if let responseBase64 = invokeNullary(symbol: "LibXrayStopXray") {
-            V2rayLogManager.shared.log("LibXrayStopXray completed: \(decodeBase64String(responseBase64) ?? "OK")", level: "I", tag: "LibXrayBridge")
+        if let resp = try? invokeAPIV3(method: "stopXray", payload: nil) {
+            let ok = (resp["success"] as? Bool) ?? true
+            V2rayLogManager.shared.log("CGoInvoke(stopXray) completed (success=\(ok))", level: "I", tag: "LibXrayBridge")
+            return ok
+        }
+        if let responseBase64 = invokeLegacyNullary(symbol: "LibXrayStopXray") {
+            V2rayLogManager.shared.log("Legacy LibXrayStopXray completed: \(responseBase64)", level: "I", tag: "LibXrayBridge")
             return true
         }
         return false
@@ -159,40 +165,81 @@ public final class LibXrayBridge {
 
     // MARK: - Server Delay / Ping
 
-    /// Measures server delay (in milliseconds) using `LibXrayPing` with an automatic HTTP URL probe fallback.
+    /// Measures server delay (in milliseconds) using `XTLS/libXray` API v3 `pingBatch`
+    /// (when no managed Xray instance is running in the current process) or via an isolated temporary proxy session.
     public func measureOutboundDelay(
         configJSON: String,
         url: String,
         datDir: String,
         timeoutSeconds: Int = 10
     ) -> Int {
+        setenv("xray.location.asset", datDir, 1)
+        setenv("XRAY_LOCATION_ASSET", datDir, 1)
+
         let sanitizedConfig = V2rayConfigUtilities.prepareDelayTestConfig(configJSON)
+        let outboundTag = extractPrimaryOutboundTag(from: sanitizedConfig) ?? "proxy"
+        let timeoutMs = max(1000, timeoutSeconds * 1000)
+
+        // 1. Primary path: XTLS/libXray API v3 `pingBatch`
+        // Note: `pingBatch` requires no active managed Xray instance in the same process.
+        // In VPN mode, Xray runs inside the PacketTunnel extension process, so the main app process is clean!
+        let pingBatchPayload: [String: Any] = [
+            "configs": [
+                [
+                    "xrayJson": sanitizedConfig,
+                    "outboundTag": outboundTag
+                ]
+            ],
+            "timeout": timeoutMs,
+            "url": url
+        ]
+
+        if let response = try? invokeAPIV3(method: "pingBatch", payload: pingBatchPayload) {
+            if let success = response["success"] as? Bool, success,
+               let dataDict = response["data"] as? [String: Any],
+               let results = dataDict["results"] as? [[String: Any]],
+               let first = results.first {
+                let itemSuccess = (first["success"] as? Bool) ?? false
+                if itemSuccess {
+                    if let delay = (first["delay"] as? NSNumber)?.intValue {
+                        return delay
+                    }
+                } else if let errStr = first["error"] as? String {
+                    V2rayLogManager.shared.log("pingBatch item error: \(errStr)", level: "W", tag: "LibXrayBridge")
+                }
+                return -1
+            } else if let errStr = response["error"] as? String {
+                V2rayLogManager.shared.log("pingBatch invoke note: \(errStr)", level: "W", tag: "LibXrayBridge")
+                // If pingBatch returned "pingBatch requires an isolated process without a managed Xray instance"
+                // (e.g., while proxy-only mode is active in the same process), fall back to connected proxy probe:
+                if errStr.contains("isolated process") {
+                    let localPort = extractLocalSocksOrHttpPort(from: sanitizedConfig)
+                    return measureConnectedDelay(url: url, localProxyPort: localPort, timeoutSeconds: TimeInterval(timeoutSeconds))
+                }
+            }
+        }
+
+        // 2. Fallback: Legacy `LibXrayPing`
         let tempConfigURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("xray_ping_\(UUID().uuidString).json")
         defer {
             try? FileManager.default.removeItem(at: tempConfigURL)
         }
-
-        do {
-            try sanitizedConfig.write(to: tempConfigURL, atomically: true, encoding: .utf8)
+        if let _ = try? sanitizedConfig.write(to: tempConfigURL, atomically: true, encoding: .utf8) {
             let localPort = extractLocalSocksOrHttpPort(from: sanitizedConfig) ?? 10808
-            let proxyURI = "socks5://127.0.0.1:\(localPort)"
-
-            let pingPayload: [String: Any] = [
+            let legacyPing: [String: Any] = [
                 "datDir": datDir,
                 "configPath": tempConfigURL.path,
                 "timeout": timeoutSeconds,
                 "url": url,
-                "proxy": proxyURI
+                "proxy": "socks5://127.0.0.1:\(localPort)"
             ]
-            let base64Req = try encodeBase64JSON(pingPayload)
-
-            if let responseBase64 = invokeUnary(symbol: "LibXrayPing", arg: base64Req),
-               let delay = parseDelayResponse(responseBase64) {
+            if let base64Req = try? encodeBase64JSON(legacyPing),
+               let responseBase64 = invokeLegacyUnary(symbol: "LibXrayPing", arg: base64Req),
+               let decoded = decodeBase64JSON(responseBase64),
+               let delay = (decoded["data"] as? NSNumber)?.intValue {
                 return delay
             }
-        } catch {
-            V2rayLogManager.shared.log("measureOutboundDelay error: \(error.localizedDescription)", level: "W", tag: "LibXrayBridge")
         }
 
         return -1
@@ -238,30 +285,56 @@ public final class LibXrayBridge {
 
     // MARK: - Traffic Statistics
 
-    /// Queries cumulative outbound traffic `(downloadBytes, uploadBytes)` via `LibXrayQueryStats`.
+    /// Queries cumulative outbound traffic `(downloadBytes, uploadBytes)` from Xray's built-in
+    /// `/debug/vars` metrics endpoint on `127.0.0.1:apiPort` (or legacy `LibXrayQueryStats`).
     public func queryOutboundTraffic(apiPort: Int) -> (download: Int64, upload: Int64)? {
+        // 1. Primary path: HTTP GET `http://127.0.0.1:<apiPort>/debug/vars`
+        if let url = URL(string: "http://127.0.0.1:\(apiPort)/debug/vars") {
+            let config = URLSessionConfiguration.ephemeral
+            config.timeoutIntervalForRequest = 0.8
+            config.timeoutIntervalForResource = 0.8
+            let session = URLSession(configuration: config)
+            let semaphore = DispatchSemaphore(value: 0)
+            var resultStats: (Int64, Int64)?
+
+            let task = session.dataTask(with: url) { data, response, error in
+                defer { semaphore.signal() }
+                guard error == nil,
+                      let http = response as? HTTPURLResponse, http.statusCode == 200,
+                      let data = data,
+                      let root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
+                    return
+                }
+                var down: Int64 = 0
+                var up: Int64 = 0
+                if let statsObj = root["stats"] {
+                    self.accumulateStats(from: statsObj, download: &down, upload: &up)
+                    resultStats = (down, up)
+                }
+            }
+            task.resume()
+            _ = semaphore.wait(timeout: .now() + 0.9)
+            session.invalidateAndCancel()
+
+            if let stats = resultStats {
+                return stats
+            }
+        }
+
+        // 2. Fallback: Legacy `LibXrayQueryStats`
         let payload: [String: Any] = [
             "server": "127.0.0.1:\(apiPort)",
             "dir": ""
         ]
-        guard let base64Req = try? encodeBase64JSON(payload),
-              let responseBase64 = invokeUnary(symbol: "LibXrayQueryStats", arg: base64Req),
-              let decoded = decodeBase64String(responseBase64),
-              let data = decoded.data(using: .utf8),
-              let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
-            return nil
-        }
-
-        // Parse LibXray response envelope (`{"success": true, "data": ...}`)
-        var downloadTotal: Int64 = 0
-        var uploadTotal: Int64 = 0
-
-        if let statsData = json["data"] {
-            accumulateStats(from: statsData, download: &downloadTotal, upload: &uploadTotal)
-            return (downloadTotal, uploadTotal)
-        } else if json["stat"] != nil {
-            accumulateStats(from: json, download: &downloadTotal, upload: &uploadTotal)
-            return (downloadTotal, uploadTotal)
+        if let base64Req = try? encodeBase64JSON(payload),
+           let responseBase64 = invokeLegacyUnary(symbol: "LibXrayQueryStats", arg: base64Req),
+           let json = decodeBase64JSON(responseBase64) {
+            var down: Int64 = 0
+            var up: Int64 = 0
+            if let statsData = json["data"] {
+                accumulateStats(from: statsData, download: &down, upload: &up)
+                return (down, up)
+            }
         }
 
         return nil
@@ -269,101 +342,122 @@ public final class LibXrayBridge {
 
     // MARK: - Core Version
 
-    /// Returns the embedded Xray-core version string via `LibXrayXrayVersion` (or fallback version).
+    /// Returns the embedded Xray-core version string via `CGoInvoke` (`method: "xrayVersion"`).
     public func getCoreVersion() -> String {
-        if let responseBase64 = invokeNullary(symbol: "LibXrayXrayVersion") {
-            if let decoded = decodeBase64String(responseBase64),
-               let data = decoded.data(using: .utf8),
-               let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] {
-                if let versionStr = json["data"] as? String, !versionStr.isEmpty {
-                    return versionStr
-                }
+        if let response = try? invokeAPIV3(method: "xrayVersion", payload: nil) {
+            if let dataDict = response["data"] as? [String: Any],
+               let version = dataDict["version"] as? String,
+               !version.isEmpty {
+                return version
             }
-            if let plain = decodeBase64String(responseBase64), !plain.isEmpty {
-                return plain
+            if let versionStr = response["data"] as? String, !versionStr.isEmpty {
+                return versionStr
             }
-            return responseBase64
         }
+
+        if let responseBase64 = invokeLegacyNullary(symbol: "LibXrayXrayVersion"),
+           let json = decodeBase64JSON(responseBase64),
+           let versionStr = json["data"] as? String,
+           !versionStr.isEmpty {
+            return versionStr
+        }
+
         return "Xray v26.9.9 (iOS)"
     }
 
-    // MARK: - Internal FFI / Symbol Invocation
+    // MARK: - API v3 `CGoInvoke` / `CGoFree` Dispatcher
 
-    private func invokeUnary(symbol: String, arg: String) -> String? {
+    private func invokeAPIV3(method: String, payload: [String: Any]?) throws -> [String: Any]? {
+        var envelope: [String: Any] = [
+            "apiVersion": Self.apiVersion,
+            "method": method
+        ]
+        if let payload = payload {
+            envelope["payload"] = payload
+        }
+
+        let reqData = try JSONSerialization.data(withJSONObject: envelope, options: [])
+        guard let reqJSON = String(data: reqData, encoding: .utf8) else {
+            return nil
+        }
+
+        guard let respJSON = callCGoInvoke(reqJSON),
+              let respData = respJSON.data(using: .utf8),
+              let json = (try? JSONSerialization.jsonObject(with: respData)) as? [String: Any] else {
+            return nil
+        }
+        return json
+    }
+
+    private func callCGoInvoke(_ requestJSON: String) -> String? {
         #if canImport(LibXray)
-        switch symbol {
-        case "LibXrayRunXray":
-            return LibXrayRunXray(arg)
-        case "LibXrayRunXrayFromJSON":
-            return LibXrayRunXrayFromJSON(arg)
-        case "LibXrayPing":
-            return LibXrayPing(arg)
-        case "LibXrayQueryStats":
-            return LibXrayQueryStats(arg)
-        case "LibXrayTestXray":
-            return LibXrayTestXray(arg)
-        default:
-            break
+        return requestJSON.withCString { cStr -> String? in
+            let mutableReq = strdup(cStr)
+            defer { free(mutableReq) }
+            guard let resPtr = CGoInvoke(mutableReq) else { return nil }
+            defer { CGoFree(resPtr) }
+            return String(cString: resPtr)
+        }
+        #else
+        let RTLD_DEFAULT = UnsafeMutableRawPointer(bitPattern: -2)
+        guard let invokeSym = dlsym(RTLD_DEFAULT, "CGoInvoke") else {
+            return nil
+        }
+        let invokeFn = unsafeBitCast(invokeSym, to: CGoInvokeFn.self)
+        let freeSym = dlsym(RTLD_DEFAULT, "CGoFree")
+        let freeFn = freeSym.map { unsafeBitCast($0, to: CGoFreeFn.self) }
+
+        return requestJSON.withCString { cStr -> String? in
+            let mutableReq = strdup(cStr)
+            defer { free(mutableReq) }
+            guard let resPtr = invokeFn(mutableReq) else { return nil }
+            defer { freeFn?(resPtr) }
+            return String(cString: resPtr)
         }
         #endif
+    }
 
-        // Dynamic symbol lookup (`dlsym`) for CGo / Gomobile exported functions
+    // MARK: - Legacy Dynamic Symbol Fallbacks
+
+    private func invokeLegacyUnary(symbol: String, arg: String) -> String? {
         let RTLD_DEFAULT = UnsafeMutableRawPointer(bitPattern: -2)
         if let sym = dlsym(RTLD_DEFAULT, symbol) {
             let fn = unsafeBitCast(sym, to: CStringUnaryFn.self)
             return arg.withCString { cStr in
                 guard let resultPtr = fn(cStr) else { return nil }
-                let str = String(cString: resultPtr)
-                return str
+                return String(cString: resultPtr)
             }
         }
-
         return nil
     }
 
-    private func invokeNullary(symbol: String) -> String? {
-        #if canImport(LibXray)
-        switch symbol {
-        case "LibXrayStopXray":
-            return LibXrayStopXray()
-        case "LibXrayXrayVersion":
-            return LibXrayXrayVersion()
-        default:
-            break
-        }
-        #endif
-
+    private func invokeLegacyNullary(symbol: String) -> String? {
         let RTLD_DEFAULT = UnsafeMutableRawPointer(bitPattern: -2)
         if let sym = dlsym(RTLD_DEFAULT, symbol) {
             let fn = unsafeBitCast(sym, to: CStringNullaryFn.self)
             guard let resultPtr = fn() else { return nil }
             return String(cString: resultPtr)
         }
-
         return nil
     }
 
-    // MARK: - Serialization Helpers
+    // MARK: - Serialization & Parsing Helpers
 
     private func encodeBase64JSON(_ dict: [String: Any]) throws -> String {
         let data = try JSONSerialization.data(withJSONObject: dict, options: [])
         return data.base64EncodedString()
     }
 
-    private func decodeBase64String(_ base64Str: String) -> String? {
+    private func decodeBase64JSON(_ base64Str: String) -> [String: Any]? {
         let trimmed = base64Str.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let data = Data(base64Encoded: trimmed, options: .ignoreUnknownCharacters) else {
+        guard let data = Data(base64Encoded: trimmed, options: .ignoreUnknownCharacters),
+              let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
             return nil
         }
-        return String(data: data, encoding: .utf8)
+        return json
     }
 
-    private func validateLibXrayResponse(_ responseBase64: String, context: String) throws {
-        guard let decoded = decodeBase64String(responseBase64),
-              let data = decoded.data(using: .utf8),
-              let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
-            return
-        }
+    private func validateInvokeEnvelope(_ json: [String: Any], context: String) throws {
         if let success = json["success"] as? Bool, !success {
             let errMsg = (json["error"] as? String) ?? "Unknown error in \(context)"
             V2rayLogManager.shared.log("\(context) failed: \(errMsg)", level: "E", tag: "LibXrayBridge")
@@ -371,25 +465,16 @@ public final class LibXrayBridge {
         }
     }
 
-    private func parseDelayResponse(_ responseBase64: String) -> Int? {
-        guard let decoded = decodeBase64String(responseBase64),
-              let data = decoded.data(using: .utf8),
-              let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
+    private func extractPrimaryOutboundTag(from configJSON: String) -> String? {
+        guard let data = configJSON.data(using: .utf8),
+              let root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+              let outbounds = root["outbounds"] as? [[String: Any]],
+              let first = outbounds.first,
+              let tag = first["tag"] as? String,
+              !tag.isEmpty else {
             return nil
         }
-        if let success = json["success"] as? Bool, !success {
-            return -1
-        }
-        if let delayInt = json["data"] as? Int {
-            return delayInt
-        }
-        if let delayInt64 = json["data"] as? Int64 {
-            return Int(delayInt64)
-        }
-        if let delayStr = json["data"] as? String, let parsed = Int(delayStr) {
-            return parsed
-        }
-        return nil
+        return tag
     }
 
     private func extractLocalSocksOrHttpPort(from configJSON: String) -> Int? {
@@ -416,39 +501,42 @@ public final class LibXrayBridge {
             return
         }
 
-        if let dict = rawStats as? [String: Any] {
-            if let statArray = dict["stat"] as? [[String: Any]] {
-                for item in statArray {
-                    guard let name = item["name"] as? String else { continue }
-                    let val: Int64
-                    if let vInt = item["value"] as? Int64 {
-                        val = vInt
-                    } else if let vNum = item["value"] as? NSNumber {
-                        val = vNum.int64Value
-                    } else if let vStr = item["value"] as? String, let parsed = Int64(vStr) {
-                        val = parsed
-                    } else {
-                        val = 0
-                    }
+        guard let dict = rawStats as? [String: Any] else { return }
 
-                    if name.contains("outbound>>>proxy>>>traffic>>>downlink") ||
-                       name.contains("outbound>>>block>>>traffic>>>downlink") {
-                        download += val
-                    } else if name.contains("outbound>>>proxy>>>traffic>>>uplink") ||
-                              name.contains("outbound>>>block>>>traffic>>>uplink") {
-                        upload += val
-                    }
+        // Format 1: `/debug/vars` -> `stats.outbound.<tag>.downlink` or `stats.outbound.<tag>.traffic.downlink`
+        if let outboundDict = dict["outbound"] as? [String: Any] {
+            for (tag, metricsAny) in outboundDict where tag == "proxy" || tag == "block" {
+                guard let metrics = metricsAny as? [String: Any] else { continue }
+                if let traffic = metrics["traffic"] as? [String: Any] {
+                    download += (traffic["downlink"] as? NSNumber)?.int64Value ?? 0
+                    upload += (traffic["uplink"] as? NSNumber)?.int64Value ?? 0
+                } else {
+                    download += (metrics["downlink"] as? NSNumber)?.int64Value ?? 0
+                    upload += (metrics["uplink"] as? NSNumber)?.int64Value ?? 0
                 }
-            } else if let outboundDict = dict["outbound"] as? [String: Any] {
-                for (tag, metricsAny) in outboundDict where tag == "proxy" || tag == "block" {
-                    if let metrics = metricsAny as? [String: Any] {
-                        if let down = (metrics["downlink"] as? NSNumber)?.int64Value {
-                            download += down
-                        }
-                        if let up = (metrics["uplink"] as? NSNumber)?.int64Value {
-                            upload += up
-                        }
-                    }
+            }
+            return
+        }
+
+        // Format 2: StatsService array `{"stat": [{"name": "outbound>>>proxy>>>traffic>>>downlink", "value": 123}]}`
+        if let statArray = dict["stat"] as? [[String: Any]] {
+            for item in statArray {
+                guard let name = item["name"] as? String else { continue }
+                let val: Int64
+                if let vNum = item["value"] as? NSNumber {
+                    val = vNum.int64Value
+                } else if let vStr = item["value"] as? String, let parsed = Int64(vStr) {
+                    val = parsed
+                } else {
+                    val = 0
+                }
+
+                if name.contains("outbound>>>proxy>>>traffic>>>downlink") ||
+                   name.contains("outbound>>>block>>>traffic>>>downlink") {
+                    download += val
+                } else if name.contains("outbound>>>proxy>>>traffic>>>uplink") ||
+                          name.contains("outbound>>>block>>>traffic>>>uplink") {
+                    upload += val
                 }
             }
         }

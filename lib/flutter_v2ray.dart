@@ -26,16 +26,18 @@ class V2ray {
   /// It receives a [V2RayStatus] object containing details like duration, speeds, and state.
   final void Function(V2RayStatus status) onStatusChanged;
 
-  /// Requests permission to use V2Ray features, such as VPN access on Android.
+  /// Requests permission to use V2Ray features, such as VPN access on Android and iOS.
   /// Returns a [Future] that completes with true if permission is granted, otherwise false.
-  /// On non-Android platforms, it defaults to granting permission.
   Future<bool> requestPermission() async {
     return await FlutterV2rayPlatform.instance.requestPermission();
   }
 
-  /// Initializes the V2Ray client with notification settings and a status change callback.
+  /// Initializes the V2Ray client with notification settings (Android),
+  /// NetworkExtension identifiers (iOS), and a status change callback.
   /// [notificationIconResourceType] specifies the type of the notification icon (e.g., 'mipmap').
   /// [notificationIconResourceName] specifies the name of the notification icon (e.g., 'ic_launcher').
+  /// [providerBundleIdentifier] specifies the iOS NetworkExtension bundle ID (e.g., 'com.example.app.XrayTunnel').
+  /// [groupIdentifier] specifies the iOS App Group identifier shared between the app and extension (e.g., 'group.com.example.app').
   /// Returns a [Future] that completes when initialization is done.
   Future<void> initialize({
     String notificationIconResourceType = 'mipmap',

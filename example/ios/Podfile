@@ -36,6 +36,13 @@ target 'Runner' do
   end
 end
 
+# Optional: When the XrayTunnel NetworkExtension target is added in Xcode,
+# link flutter_v2ray_client so PacketTunnelProvider can subclass V2rayPacketTunnelProvider.
+# target 'XrayTunnel' do
+#   use_frameworks!
+#   pod 'flutter_v2ray_client', :path => '../..'
+# end
+
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)

@@ -1,0 +1,8 @@
+version: 1
+bundleID: dev.amirzr.flutterV2rayMobile
+product: XtoolHarness
+entitlementsPath: ../../example/ios/Runner/Runner.entitlements
+extensions:
+  - product: XrayTunnel
+    infoPath: ../../example/ios/XrayTunnel/Info.plist
+    entitlementsPath: ../../example/ios/XrayTunnel/XrayTunnel.entitlements

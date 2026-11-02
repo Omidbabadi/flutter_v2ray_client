@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -13,6 +15,8 @@ class MethodChannelFlutterV2ray extends FlutterV2rayPlatform {
   /// The event channel used to receive status updates from the native platform.
   final eventChannel = const EventChannel('flutter_v2ray_client/status');
 
+  StreamSubscription<dynamic>? _statusSubscription;
+
   @override
   Future<void> initializeV2Ray({
     required void Function(V2RayStatus status) onStatusChanged,
@@ -21,15 +25,20 @@ class MethodChannelFlutterV2ray extends FlutterV2rayPlatform {
     required String providerBundleIdentifier,
     required String groupIdentifier,
   }) async {
-    eventChannel.receiveBroadcastStream().distinct().cast().listen((event) {
-      if (event != null) {
+    await _statusSubscription?.cancel();
+    _statusSubscription = eventChannel
+        .receiveBroadcastStream()
+        .distinct()
+        .cast<List<dynamic>>()
+        .listen((event) {
+      if (event.length >= 6) {
         onStatusChanged.call(V2RayStatus(
-          duration: event[0],
-          uploadSpeed: int.parse(event[1]),
-          downloadSpeed: int.parse(event[2]),
-          upload: int.parse(event[3]),
-          download: int.parse(event[4]),
-          state: event[5],
+          duration: event[0].toString(),
+          uploadSpeed: int.tryParse(event[1].toString()) ?? 0,
+          downloadSpeed: int.tryParse(event[2].toString()) ?? 0,
+          upload: int.tryParse(event[3].toString()) ?? 0,
+          download: int.tryParse(event[4].toString()) ?? 0,
+          state: event[5].toString(),
         ));
       }
     });
@@ -38,8 +47,8 @@ class MethodChannelFlutterV2ray extends FlutterV2rayPlatform {
       {
         'notificationIconResourceType': notificationIconResourceType,
         'notificationIconResourceName': notificationIconResourceName,
-        "providerBundleIdentifier": providerBundleIdentifier,
-        "groupIdentifier": groupIdentifier,
+        'providerBundleIdentifier': providerBundleIdentifier,
+        'groupIdentifier': groupIdentifier,
       },
     );
   }

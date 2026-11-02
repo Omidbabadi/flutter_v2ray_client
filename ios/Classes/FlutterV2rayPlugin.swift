@@ -1,3 +1,4 @@
+#if canImport(Flutter)
 import Flutter
 import UIKit
 import NetworkExtension
@@ -637,3 +638,4 @@ public class FlutterV2rayPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
         return nil
     }
 }
+#endif

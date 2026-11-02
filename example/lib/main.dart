@@ -249,19 +249,18 @@ class _HomePageState extends State<HomePage> {
                     onPressed: bypassSubnet,
                     child: const Text('Bypass Subnet'),
                   ),
-                  if (!Platform.isIOS)
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LogViewerPage(),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.article),
-                      label: const Text('View Logs'),
-                    ),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LogViewerPage(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.article),
+                    label: const Text('View Logs'),
+                  ),
                 ],
               ),
             ),

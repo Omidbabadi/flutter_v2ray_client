@@ -179,7 +179,15 @@ public enum V2rayConfigUtilities {
         ]
         root["policy"] = policy
 
-        // Enable built-in StatsService API for LibXrayQueryStats if not already configured
+        // Enable built-in HTTP expvar metrics (`/debug/vars`) on 127.0.0.1:apiPort
+        if root["metrics"] == nil {
+            root["metrics"] = [
+                "tag": "metrics_out",
+                "listen": "127.0.0.1:\(apiPort)"
+            ]
+        }
+
+        // Also enable built-in StatsService API for compatibility
         if root["api"] == nil {
             root["api"] = [
                 "tag": "api",
