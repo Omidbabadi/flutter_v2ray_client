@@ -253,15 +253,13 @@ public final class LibXrayBridge {
         config.timeoutIntervalForRequest = timeoutSeconds
         config.timeoutIntervalForResource = timeoutSeconds
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
-
-        if let port = localProxyPort, port > 0 {
+if let port = localProxyPort, port > 0 {
             config.connectionProxyDictionary = [
-                kCFNetworkProxiesSOCKSEnable as AnyHashable: 1,
-                kCFNetworkProxiesSOCKSProxy as AnyHashable: "127.0.0.1",
-                kCFNetworkProxiesSOCKSPort as AnyHashable: port
+                "SOCKSEnable": 1,
+                "SOCKSProxy": "127.0.0.1",
+                "SOCKSPort": port
             ]
         }
-
         let session = URLSession(configuration: config)
         var request = URLRequest(url: targetURL)
         request.httpMethod = "HEAD"

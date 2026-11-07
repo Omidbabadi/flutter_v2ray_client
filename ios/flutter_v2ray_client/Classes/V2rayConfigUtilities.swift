@@ -3,8 +3,8 @@ import Foundation
 /// Sanitization, statistics injection, and TUN configuration utilities for Xray JSON on iOS.
 /// Mirrors Android's `Utilities.java` so both platforms produce identical Xray behavior.
 public enum V2rayConfigUtilities {
-    private static let defaultApiPort: Int = 10085
-    private static let defaultMtu: Int = 1500
+    static let defaultApiPort = 10808
+    static let defaultMtu = 1500
 
     /// Sanitizes raw Xray JSON config:
     /// - Strips removed `allowInsecure` TLS keys recursively
