@@ -1,0 +1,19 @@
+{
+  "" : {
+    "diagnostics" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XtoolHarness-t.build/Objects-normal/arm64/XtoolHarness-primary.dia",
+    "emit-module-dependencies" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XtoolHarness-t.build/Objects-normal/arm64/XtoolHarness-primary-emit-module.d",
+    "emit-module-diagnostics" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XtoolHarness-t.build/Objects-normal/arm64/XtoolHarness-primary-emit-module.dia",
+    "pch" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XtoolHarness-t.build/Objects-normal/arm64/XtoolHarness-primary-Bridging-header.pch",
+    "swift-dependencies" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XtoolHarness-t.build/Objects-normal/arm64/XtoolHarness-primary.swiftdeps"
+  },
+  "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/Sources/XtoolHarness/XtoolHarnessApp.swift" : {
+    "const-values" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XtoolHarness-t.build/Objects-normal/arm64/XtoolHarnessApp.swiftconstvalues",
+    "dependencies" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XtoolHarness-t.build/Objects-normal/arm64/XtoolHarnessApp.d",
+    "diagnostics" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XtoolHarness-t.build/Objects-normal/arm64/XtoolHarnessApp.dia",
+    "index-unit-output-path" : "/XtoolHarness.build/Debug-iphoneos/XtoolHarness-t.build/Objects-normal/arm64/XtoolHarnessApp.o",
+    "llvm-bc" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XtoolHarness-t.build/Objects-normal/arm64/XtoolHarnessApp.bc",
+    "object" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XtoolHarness-t.build/Objects-normal/arm64/XtoolHarnessApp.o",
+    "swift-dependencies" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XtoolHarness-t.build/Objects-normal/arm64/XtoolHarnessApp.swiftdeps",
+    "swiftmodule" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XtoolHarness-t.build/Objects-normal/arm64/XtoolHarnessApp~partial.swiftmodule"
+  }
+}

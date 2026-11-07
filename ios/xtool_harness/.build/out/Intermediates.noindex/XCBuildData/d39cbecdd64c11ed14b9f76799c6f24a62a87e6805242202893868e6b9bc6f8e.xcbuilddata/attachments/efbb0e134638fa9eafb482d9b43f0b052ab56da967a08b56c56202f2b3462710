@@ -1,0 +1,4 @@
+module XtoolHarness {
+header "XtoolHarness-Swift.h"
+export *
+}

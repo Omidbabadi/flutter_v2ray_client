@@ -1,0 +1,58 @@
+{
+  "object" : {
+    "artifacts" : [
+      {
+        "kind" : {
+          "xcframework" : {
+
+          }
+        },
+        "packageRef" : {
+          "identity" : "flutter_v2ray_client",
+          "kind" : "fileSystem",
+          "location" : "/home/omidbabadi/development/flutter_v2ray_client/ios/flutter_v2ray_client",
+          "name" : "flutter_v2ray_client"
+        },
+        "path" : "/home/omidbabadi/development/flutter_v2ray_client/ios/flutter_v2ray_client/Frameworks/LibXray.xcframework",
+        "source" : {
+          "type" : "local"
+        },
+        "targetName" : "LibXray"
+      }
+    ],
+    "dependencies" : [
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "flutter_v2ray_client",
+          "kind" : "fileSystem",
+          "location" : "/home/omidbabadi/development/flutter_v2ray_client/ios/flutter_v2ray_client",
+          "name" : "flutter_v2ray_client"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/home/omidbabadi/development/flutter_v2ray_client/ios/flutter_v2ray_client"
+        },
+        "subpath" : "flutter_v2ray_client"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "xtool_harness",
+          "kind" : "fileSystem",
+          "location" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness",
+          "name" : "xtool_harness"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness"
+        },
+        "subpath" : "xtool_harness"
+      }
+    ],
+    "prebuilts" : [
+
+    ]
+  },
+  "version" : 7
+}

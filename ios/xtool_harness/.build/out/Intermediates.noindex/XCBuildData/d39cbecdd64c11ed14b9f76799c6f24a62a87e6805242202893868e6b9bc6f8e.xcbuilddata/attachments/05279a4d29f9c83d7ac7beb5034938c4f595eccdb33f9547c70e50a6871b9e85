@@ -1,0 +1,19 @@
+{
+  "" : {
+    "diagnostics" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XrayTunnel-t.build/Objects-normal/arm64/XrayTunnel-primary.dia",
+    "emit-module-dependencies" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XrayTunnel-t.build/Objects-normal/arm64/XrayTunnel-primary-emit-module.d",
+    "emit-module-diagnostics" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XrayTunnel-t.build/Objects-normal/arm64/XrayTunnel-primary-emit-module.dia",
+    "pch" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XrayTunnel-t.build/Objects-normal/arm64/XrayTunnel-primary-Bridging-header.pch",
+    "swift-dependencies" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XrayTunnel-t.build/Objects-normal/arm64/XrayTunnel-primary.swiftdeps"
+  },
+  "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/XrayTunnel/PacketTunnelProvider.swift" : {
+    "const-values" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XrayTunnel-t.build/Objects-normal/arm64/PacketTunnelProvider.swiftconstvalues",
+    "dependencies" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XrayTunnel-t.build/Objects-normal/arm64/PacketTunnelProvider.d",
+    "diagnostics" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XrayTunnel-t.build/Objects-normal/arm64/PacketTunnelProvider.dia",
+    "index-unit-output-path" : "/XtoolHarness.build/Debug-iphoneos/XrayTunnel-t.build/Objects-normal/arm64/PacketTunnelProvider.o",
+    "llvm-bc" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XrayTunnel-t.build/Objects-normal/arm64/PacketTunnelProvider.bc",
+    "object" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XrayTunnel-t.build/Objects-normal/arm64/PacketTunnelProvider.o",
+    "swift-dependencies" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XrayTunnel-t.build/Objects-normal/arm64/PacketTunnelProvider.swiftdeps",
+    "swiftmodule" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/XtoolHarness.build/Debug-iphoneos/XrayTunnel-t.build/Objects-normal/arm64/PacketTunnelProvider~partial.swiftmodule"
+  }
+}

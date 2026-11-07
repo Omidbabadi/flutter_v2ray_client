@@ -1,0 +1,69 @@
+{
+  "" : {
+    "diagnostics" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/flutter_v2ray_client-primary.dia",
+    "emit-module-dependencies" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/flutter_v2ray_client-primary-emit-module.d",
+    "emit-module-diagnostics" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/flutter_v2ray_client-primary-emit-module.dia",
+    "pch" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/flutter_v2ray_client-primary-Bridging-header.pch",
+    "swift-dependencies" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/flutter_v2ray_client-primary.swiftdeps"
+  },
+  "/home/omidbabadi/development/flutter_v2ray_client/ios/flutter_v2ray_client/Classes/FlutterV2rayPlugin.swift" : {
+    "const-values" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/FlutterV2rayPlugin.swiftconstvalues",
+    "dependencies" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/FlutterV2rayPlugin.d",
+    "diagnostics" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/FlutterV2rayPlugin.dia",
+    "index-unit-output-path" : "/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/FlutterV2rayPlugin.o",
+    "llvm-bc" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/FlutterV2rayPlugin.bc",
+    "object" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/FlutterV2rayPlugin.o",
+    "swift-dependencies" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/FlutterV2rayPlugin.swiftdeps",
+    "swiftmodule" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/FlutterV2rayPlugin~partial.swiftmodule"
+  },
+  "/home/omidbabadi/development/flutter_v2ray_client/ios/flutter_v2ray_client/Classes/LibXrayBridge.swift" : {
+    "const-values" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/LibXrayBridge.swiftconstvalues",
+    "dependencies" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/LibXrayBridge.d",
+    "diagnostics" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/LibXrayBridge.dia",
+    "index-unit-output-path" : "/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/LibXrayBridge.o",
+    "llvm-bc" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/LibXrayBridge.bc",
+    "object" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/LibXrayBridge.o",
+    "swift-dependencies" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/LibXrayBridge.swiftdeps",
+    "swiftmodule" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/LibXrayBridge~partial.swiftmodule"
+  },
+  "/home/omidbabadi/development/flutter_v2ray_client/ios/flutter_v2ray_client/Classes/V2rayConfigUtilities.swift" : {
+    "const-values" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayConfigUtilities.swiftconstvalues",
+    "dependencies" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayConfigUtilities.d",
+    "diagnostics" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayConfigUtilities.dia",
+    "index-unit-output-path" : "/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayConfigUtilities.o",
+    "llvm-bc" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayConfigUtilities.bc",
+    "object" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayConfigUtilities.o",
+    "swift-dependencies" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayConfigUtilities.swiftdeps",
+    "swiftmodule" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayConfigUtilities~partial.swiftmodule"
+  },
+  "/home/omidbabadi/development/flutter_v2ray_client/ios/flutter_v2ray_client/Classes/V2rayLogManager.swift" : {
+    "const-values" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayLogManager.swiftconstvalues",
+    "dependencies" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayLogManager.d",
+    "diagnostics" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayLogManager.dia",
+    "index-unit-output-path" : "/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayLogManager.o",
+    "llvm-bc" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayLogManager.bc",
+    "object" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayLogManager.o",
+    "swift-dependencies" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayLogManager.swiftdeps",
+    "swiftmodule" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayLogManager~partial.swiftmodule"
+  },
+  "/home/omidbabadi/development/flutter_v2ray_client/ios/flutter_v2ray_client/Classes/V2rayPacketTunnelProvider.swift" : {
+    "const-values" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayPacketTunnelProvider.swiftconstvalues",
+    "dependencies" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayPacketTunnelProvider.d",
+    "diagnostics" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayPacketTunnelProvider.dia",
+    "index-unit-output-path" : "/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayPacketTunnelProvider.o",
+    "llvm-bc" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayPacketTunnelProvider.bc",
+    "object" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayPacketTunnelProvider.o",
+    "swift-dependencies" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayPacketTunnelProvider.swiftdeps",
+    "swiftmodule" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/V2rayPacketTunnelProvider~partial.swiftmodule"
+  },
+  "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/DerivedSources/resource_bundle_accessor.swift" : {
+    "const-values" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/resource_bundle_accessor.swiftconstvalues",
+    "dependencies" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/resource_bundle_accessor.d",
+    "diagnostics" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/resource_bundle_accessor.dia",
+    "index-unit-output-path" : "/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/resource_bundle_accessor.o",
+    "llvm-bc" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/resource_bundle_accessor.bc",
+    "object" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/resource_bundle_accessor.o",
+    "swift-dependencies" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/resource_bundle_accessor.swiftdeps",
+    "swiftmodule" : "/home/omidbabadi/development/flutter_v2ray_client/ios/xtool_harness/.build/out/Intermediates.noindex/flutter_v2ray_client.build/Debug-iphoneos/flutter_v2ray_client-t.build/Objects-normal/arm64/resource_bundle_accessor~partial.swiftmodule"
+  }
+}

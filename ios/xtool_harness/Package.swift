@@ -32,7 +32,7 @@ let package = Package(
             dependencies: [
                 .product(name: "flutter_v2ray_client", package: "flutter_v2ray_client")
             ],
-            path: "../../example/ios/XrayTunnel",
+            path: "XrayTunnel",
             sources: ["PacketTunnelProvider.swift"]
         )
     ]

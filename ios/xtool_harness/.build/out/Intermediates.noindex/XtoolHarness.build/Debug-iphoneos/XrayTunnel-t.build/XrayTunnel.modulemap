@@ -1,0 +1,4 @@
+module XrayTunnel {
+header "XrayTunnel-Swift.h"
+export *
+}

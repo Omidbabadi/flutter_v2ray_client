@@ -1,0 +1,4 @@
+module flutter_v2ray_client {
+header "flutter_v2ray_client-Swift.h"
+export *
+}
