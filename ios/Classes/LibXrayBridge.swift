@@ -253,8 +253,14 @@ public final class LibXrayBridge {
         config.timeoutIntervalForRequest = timeoutSeconds
         config.timeoutIntervalForResource = timeoutSeconds
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
-if let port = localProxyPort, port > 0 {
+        if let port = localProxyPort, port > 0 {
             config.connectionProxyDictionary = [
+                "HTTPEnable": 1,
+                "HTTPProxy": "127.0.0.1",
+                "HTTPPort": port,
+                "HTTPSEnable": 1,
+                "HTTPSProxy": "127.0.0.1",
+                "HTTPSPort": port,
                 "SOCKSEnable": 1,
                 "SOCKSProxy": "127.0.0.1",
                 "SOCKSPort": port
@@ -481,10 +487,18 @@ if let port = localProxyPort, port > 0 {
               let inbounds = root["inbounds"] as? [[String: Any]] else {
             return nil
         }
+        // Prefer HTTP inbound first because iOS URLSession natively supports HTTP/HTTPS proxies in connectionProxyDictionary.
         for inbound in inbounds {
-            if let proto = inbound["protocol"] as? String,
-               (proto == "socks" || proto == "http"),
-               let port = inbound["port"] as? Int {
+            if let proto = (inbound["protocol"] as? String)?.lowercased(),
+               proto == "http",
+               let port = (inbound["port"] as? NSNumber)?.intValue, port > 0 {
+                return port
+            }
+        }
+        for inbound in inbounds {
+            if let proto = (inbound["protocol"] as? String)?.lowercased(),
+               proto == "socks",
+               let port = (inbound["port"] as? NSNumber)?.intValue, port > 0 {
                 return port
             }
         }
@@ -503,7 +517,8 @@ if let port = localProxyPort, port > 0 {
 
         // Format 1: `/debug/vars` -> `stats.outbound.<tag>.downlink` or `stats.outbound.<tag>.traffic.downlink`
         if let outboundDict = dict["outbound"] as? [String: Any] {
-            for (tag, metricsAny) in outboundDict where tag == "proxy" || tag == "block" {
+            let ignoredTags: Set<String> = ["direct", "blackhole", "metrics_out", "api"]
+            for (tag, metricsAny) in outboundDict where !ignoredTags.contains(tag.lowercased()) {
                 guard let metrics = metricsAny as? [String: Any] else { continue }
                 if let traffic = metrics["traffic"] as? [String: Any] {
                     download += (traffic["downlink"] as? NSNumber)?.int64Value ?? 0

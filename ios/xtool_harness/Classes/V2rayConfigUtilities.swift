@@ -1,14 +1,16 @@
 import Foundation
+import Darwin
 
 /// Sanitization, statistics injection, and TUN configuration utilities for Xray JSON on iOS.
 /// Mirrors Android's `Utilities.java` so both platforms produce identical Xray behavior.
 public enum V2rayConfigUtilities {
-    public static let defaultApiPort: Int = 10808
+    public static let defaultApiPort: Int = 10085
     public static let defaultMtu: Int = 1500
 
     /// Sanitizes raw Xray JSON config:
     /// - Strips removed `allowInsecure` TLS keys recursively
     /// - Migrates freedom outbound `settings.domainStrategy` to `streamSettings.sockopt.domainStrategy`
+    /// - Strips legacy gRPC `api` (`Commander`) blocks to avoid `Commander.Start`/`Close` races
     public static func sanitizeConfig(_ rawConfig: String) -> String {
         guard let data = rawConfig.data(using: .utf8),
               var root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
@@ -16,6 +18,7 @@ public enum V2rayConfigUtilities {
         }
         root = stripAllowInsecureRecursive(root) as? [String: Any] ?? root
         migrateFreedomDomainStrategy(&root)
+        stripLegacyCommanderApi(&root)
         guard let outData = try? JSONSerialization.data(withJSONObject: root, options: []),
               let outString = String(data: outData, encoding: .utf8) else {
             return rawConfig
@@ -24,8 +27,8 @@ public enum V2rayConfigUtilities {
     }
 
     /// Prepares an Xray configuration for execution by:
-    /// 1. Sanitizing deprecated TLS/freedom fields
-    /// 2. Optionally injecting `stats`, `policy`, and the local Dokodemo-door API inbound for `LibXrayQueryStats`
+    /// 1. Sanitizing deprecated TLS/freedom fields and removing legacy `Commander` (`api`) blocks
+    /// 2. Optionally injecting `stats`, `policy`, and the built-in `metrics` HTTP endpoint (`/debug/vars`)
     /// 3. Optionally injecting the built-in `tun` inbound and DNS routing rules when running in VPN mode
     public static func prepareRuntimeConfig(
         _ rawConfig: String,
@@ -41,31 +44,39 @@ public enum V2rayConfigUtilities {
             return (sanitized, apiPort, ["1.1.1.1", "8.8.8.8"])
         }
 
+        let usedPorts = collectConfiguredInboundPorts(from: root)
+        let resolvedApiPort = findAvailableLocalPort(preferred: apiPort, excluding: usedPorts)
+
         if enableTrafficStats {
-            injectStatsAndMetrics(&root, apiPort: apiPort)
+            injectStatsAndMetrics(&root, apiPort: resolvedApiPort)
         }
 
         if injectTunInbound {
             ensureTunInbound(&root, tunName: tunName, mtu: mtu)
+        } else {
+            ensureLocalHttpProxyInbound(&root, excluding: usedPorts.union([resolvedApiPort]))
         }
 
         let dnsServers = extractPlainIpDnsServers(from: root)
 
         guard let outData = try? JSONSerialization.data(withJSONObject: root, options: []),
               let outString = String(data: outData, encoding: .utf8) else {
-            return (sanitized, apiPort, dnsServers)
+            return (sanitized, resolvedApiPort, dnsServers)
         }
-        return (outString, apiPort, dnsServers)
+        return (outString, resolvedApiPort, dnsServers)
     }
 
     /// Prepares a configuration for standalone outbound delay testing (`getServerDelay`).
-    /// Removes custom routing rules so the probe goes directly through the primary outbound.
+    /// Removes custom routing rules, inbounds, and metrics/API listeners so the probe goes directly through the primary outbound.
     public static func prepareDelayTestConfig(_ rawConfig: String) -> String {
         let sanitized = sanitizeConfig(rawConfig)
         guard let data = sanitized.data(using: .utf8),
               var root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
             return sanitized
         }
+        root.removeValue(forKey: "api")
+        root.removeValue(forKey: "metrics")
+        root.removeValue(forKey: "stats")
         if var routing = root["routing"] as? [String: Any] {
             routing.removeValue(forKey: "rules")
             root["routing"] = routing
@@ -159,7 +170,41 @@ public enum V2rayConfigUtilities {
         root["outbounds"] = outbounds
     }
 
+    /// Removes legacy `"api"` (`Commander`), `"api_in"` (`dokodemo-door`), and `"outboundTag": "api"` rules.
+    /// Xray-core v26+ exposes traffic counters directly via `"metrics"` (`/debug/vars`), and starting `"api"`
+    /// alongside `"metrics"` on the same port triggers a port conflict + nil-pointer race in `Commander.Start.func1`.
+    private static func stripLegacyCommanderApi(_ root: inout [String: Any]) {
+        root.removeValue(forKey: "api")
+
+        if var inbounds = root["inbounds"] as? [[String: Any]] {
+            inbounds.removeAll { inbound in
+                let tag = (inbound["tag"] as? String) ?? ""
+                return tag == "api_in" || tag == "api"
+            }
+            root["inbounds"] = inbounds
+        }
+
+        if var routing = root["routing"] as? [String: Any],
+           var rules = routing["rules"] as? [[String: Any]] {
+            rules.removeAll { rule in
+                let outTag = (rule["outboundTag"] as? String) ?? ""
+                if outTag == "api" {
+                    return true
+                }
+                if let inTags = rule["inboundTag"] as? [String],
+                   inTags.contains("api_in") || inTags.contains("api") {
+                    return true
+                }
+                return false
+            }
+            routing["rules"] = rules
+            root["routing"] = routing
+        }
+    }
+
     private static func injectStatsAndMetrics(_ root: inout [String: Any], apiPort: Int) {
+        stripLegacyCommanderApi(&root)
+
         root["stats"] = [String: Any]()
 
         var policy = (root["policy"] as? [String: Any]) ?? [:]
@@ -179,54 +224,109 @@ public enum V2rayConfigUtilities {
         ]
         root["policy"] = policy
 
-        // Enable built-in HTTP expvar metrics (`/debug/vars`) on 127.0.0.1:apiPort
-        if root["metrics"] == nil {
-            root["metrics"] = [
-                "tag": "metrics_out",
-                "listen": "127.0.0.1:\(apiPort)"
-            ]
-        }
+        // Enable built-in HTTP expvar metrics (`/debug/vars`) on 127.0.0.1:apiPort.
+        // Do NOT inject `api` (Commander) or `api_in` (dokodemo-door) on `apiPort`,
+        // because `metrics.listen` already binds `127.0.0.1:apiPort` directly.
+        root["metrics"] = [
+            "tag": "metrics_out",
+            "listen": "127.0.0.1:\(apiPort)"
+        ]
+    }
 
-        // Also enable built-in StatsService API for compatibility
-        if root["api"] == nil {
-            root["api"] = [
-                "tag": "api",
-                "services": ["StatsService"]
-            ]
-        }
-
+    private static func ensureLocalHttpProxyInbound(_ root: inout [String: Any], excluding usedPorts: Set<Int>) {
         var inbounds = (root["inbounds"] as? [[String: Any]]) ?? []
-        let hasApiInbound = inbounds.contains { ($0["tag"] as? String) == "api_in" }
-        if !hasApiInbound {
-            let apiInbound: [String: Any] = [
-                "tag": "api_in",
-                "listen": "127.0.0.1",
-                "port": apiPort,
-                "protocol": "dokodemo-door",
-                "settings": [
-                    "address": "127.0.0.1"
-                ]
-            ]
-            inbounds.append(apiInbound)
-            root["inbounds"] = inbounds
-        }
+        let hasHttp = inbounds.contains { ($0["protocol"] as? String)?.lowercased() == "http" }
+        guard !hasHttp else { return }
 
-        var routing = (root["routing"] as? [String: Any]) ?? [:]
-        var rules = (routing["rules"] as? [[String: Any]]) ?? []
-        let hasApiRule = rules.contains {
-            guard let tags = $0["inboundTag"] as? [String] else { return false }
-            return tags.contains("api_in")
+        let httpPort = findAvailableLocalPort(preferred: 10809, excluding: usedPorts)
+        let httpInbound: [String: Any] = [
+            "tag": "in_http",
+            "port": httpPort,
+            "protocol": "http",
+            "listen": "127.0.0.1",
+            "settings": ["userLevel": 8],
+            "sniffing": ["enabled": false]
+        ]
+        inbounds.append(httpInbound)
+        root["inbounds"] = inbounds
+    }
+
+    private static func collectConfiguredInboundPorts(from root: [String: Any]) -> Set<Int> {
+        var ports = Set<Int>()
+        guard let inbounds = root["inbounds"] as? [[String: Any]] else { return ports }
+        for inbound in inbounds {
+            if let port = (inbound["port"] as? NSNumber)?.intValue, port > 0 {
+                ports.insert(port)
+            }
         }
-        if !hasApiRule {
-            let apiRule: [String: Any] = [
-                "type": "field",
-                "inboundTag": ["api_in"],
-                "outboundTag": "api"
-            ]
-            rules.insert(apiRule, at: 0)
-            routing["rules"] = rules
-            root["routing"] = routing
+        return ports
+    }
+
+    /// Finds an available TCP port on `127.0.0.1`, preferring `preferred` if it is not in `excluding` and can bind.
+    public static func findAvailableLocalPort(preferred: Int, excluding: Set<Int> = []) -> Int {
+        if preferred > 0 && !excluding.contains(preferred) && canBindLocalPort(UInt16(clamping: preferred)) {
+            return preferred
         }
+        for candidate in 10085...10150 where !excluding.contains(candidate) {
+            if canBindLocalPort(UInt16(candidate)) {
+                return candidate
+            }
+        }
+        if let ephemeral = allocateEphemeralLocalPort(), !excluding.contains(ephemeral) {
+            return ephemeral
+        }
+        return preferred
+    }
+
+    private static func canBindLocalPort(_ port: UInt16) -> Bool {
+        let fd = socket(AF_INET, SOCK_STREAM, 0)
+        guard fd >= 0 else { return false }
+        defer { close(fd) }
+
+        var reuse: Int32 = 1
+        setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse, socklen_t(MemoryLayout<Int32>.size))
+
+        var addr = sockaddr_in()
+        addr.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+        addr.sin_family = sa_family_t(AF_INET)
+        addr.sin_port = port.bigEndian
+        addr.sin_addr.s_addr = inet_addr("127.0.0.1")
+
+        let bindResult = withUnsafePointer(to: &addr) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                bind(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
+            }
+        }
+        return bindResult == 0
+    }
+
+    private static func allocateEphemeralLocalPort() -> Int? {
+        let fd = socket(AF_INET, SOCK_STREAM, 0)
+        guard fd >= 0 else { return nil }
+        defer { close(fd) }
+
+        var addr = sockaddr_in()
+        addr.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+        addr.sin_family = sa_family_t(AF_INET)
+        addr.sin_port = 0
+        addr.sin_addr.s_addr = inet_addr("127.0.0.1")
+
+        let bindResult = withUnsafePointer(to: &addr) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                bind(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
+            }
+        }
+        guard bindResult == 0 else { return nil }
+
+        var assignedAddr = sockaddr_in()
+        var len = socklen_t(MemoryLayout<sockaddr_in>.size)
+        let nameResult = withUnsafeMutablePointer(to: &assignedAddr) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                getsockname(fd, $0, &len)
+            }
+        }
+        guard nameResult == 0 else { return nil }
+        return Int(UInt16(bigEndian: assignedAddr.sin_port))
     }
 
     private static func ensureTunInbound(_ root: inout [String: Any], tunName: String, mtu: Int) {

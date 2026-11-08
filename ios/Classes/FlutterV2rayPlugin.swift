@@ -628,10 +628,18 @@ public class FlutterV2rayPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
               let inbounds = root["inbounds"] as? [[String: Any]] else {
             return nil
         }
+        // Prefer HTTP inbound first because iOS URLSession natively supports HTTP/HTTPS proxies in connectionProxyDictionary.
         for inbound in inbounds {
-            if let proto = inbound["protocol"] as? String,
-               (proto == "socks" || proto == "http"),
-               let port = inbound["port"] as? Int {
+            if let proto = (inbound["protocol"] as? String)?.lowercased(),
+               proto == "http",
+               let port = (inbound["port"] as? NSNumber)?.intValue, port > 0 {
+                return port
+            }
+        }
+        for inbound in inbounds {
+            if let proto = (inbound["protocol"] as? String)?.lowercased(),
+               proto == "socks",
+               let port = (inbound["port"] as? NSNumber)?.intValue, port > 0 {
                 return port
             }
         }
